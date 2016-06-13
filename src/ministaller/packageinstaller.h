@@ -11,6 +11,8 @@
 
 #include <QObject>
 #include <QString>
+#include <QHash>
+#include "platform.h"
 
 class PackageInstaller : public QObject
 {
@@ -22,11 +24,17 @@ public:
     void setInstallDir(const QString &dir) { Q_ASSERT(!dir.isEmpty()); m_InstallDir = dir; }
     void setPackageDir(const QString &dir) { Q_ASSERT(!dir.isEmpty()); m_PackageDir = dir; }
     void setBackupDir(const QString &dir) { Q_ASSERT(!dir.isEmpty()); m_BackupDir = dir; }
+    void setPidWaitFor(PLATFORM_PID pid) { m_PidWaitFor = pid; }
+
+private:
+    void backupPath(const QString &path);
 
 private:
     QString m_InstallDir;
     QString m_PackageDir;
     QString m_BackupDir;
+    PLATFORM_PID m_PidWaitFor;
+    QHash<QString, QString> m_BackupPaths;
 };
 
 #endif // PACKAGEINSTALLER_H

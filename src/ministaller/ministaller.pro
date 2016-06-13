@@ -1,7 +1,9 @@
 TEMPLATE = app
 
+QMAKE_MAC_SDK = macosx10.11
 QT += qml quick
 CONFIG += c++11
+DEFINES += QT_MESSAGELOGCONTEXT
 
 SOURCES += main.cpp \
     packageinstaller.cpp
@@ -15,4 +17,5 @@ QML_IMPORT_PATH =
 include(deployment.pri)
 
 HEADERS += \
-    packageinstaller.h
+    packageinstaller.h \
+    platform.h
