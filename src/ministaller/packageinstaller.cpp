@@ -66,3 +66,67 @@ void PackageInstaller::backupPath(const QString &path) {
     originalFile.rename(backupPath);
     m_BackupPaths[path] = backupPath;
 }
+
+void PackageInstaller::removeBackups() {
+    QHashIterator<QString, QString> it(m_BackupPaths);
+    int removedCount = 0;
+
+    while (it.hasNext()) {
+        it.next();
+
+        QFile backupFile(it.value());
+        if (backupFile.exists()) {
+            if (backupFile.remove()) {
+                removedCount++;
+            } else {
+                qWarning() << "Failed to cleanup backup:" << it.value();
+            }
+        } else {
+            qDebug() << "Backup path does not exist anymore:" << it.value();
+        }
+    }
+
+    qInfo() << removedCount << "files removed";
+}
+
+void PackageInstaller::restoreBackups() {
+    QHashIterator<QString, QString> it(m_BackupPaths);
+    int restoredCount = 0;
+
+    while (it.hasNext()) {
+        it.next();
+
+        const QString &originalFilepath = it.key();
+
+        QFile originalFile(originalFilepath);
+        if (originalFile.exists()) {
+            originalFile.remove();
+        }
+
+        QFile backupFile(it.value());
+        if (backupFile.exists()) {
+            if (backupFile.rename(originalFilepath)) {
+                restoredCount++;
+            } else {
+                qWarning() << "Failed to restore file:" << originalFilepath;
+            }
+        } else {
+            qDebug() << "Backup path does not exist anymore:" << it.value();
+        }
+    }
+
+    qInfo() << restoredCount << "out of" << m_BackupPaths.size() << "files restored";
+}
+
+void PackageInstaller::ensureDirectoryExistsForFile(const QString &filepath) {
+    QFileInfo fi(filepath);
+
+    if (fi.exists()) { return; }
+
+    QDir filesDir = fi.absoluteDir();
+    if (!filesDir.exists()) {
+        if (!filesDir.mkpath(".")) {
+            qWarning() << "Failed to create a path:" << filesDir.path();
+        }
+    }
+}

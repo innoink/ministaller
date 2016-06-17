@@ -14,6 +14,11 @@
 #include <QHash>
 #include "platform.h"
 
+#ifdef Q_OS_WIN
+// for the platform_pid DWORD
+#include "windows.h"
+#endif
+
 class PackageInstaller : public QObject
 {
     Q_OBJECT
@@ -28,6 +33,9 @@ public:
 
 private:
     void backupPath(const QString &path);
+    void removeBackups();
+    void restoreBackups();
+    void ensureDirectoryExistsForFile(const QString &filepath);
 
 private:
     QString m_InstallDir;
