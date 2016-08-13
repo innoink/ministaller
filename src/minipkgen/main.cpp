@@ -29,18 +29,18 @@ struct ParsedOptions {
 
 CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStringList &arguments, ParsedOptions &options) {
     QCommandLineOption basePackageOption(QStringList() << "b" << "base-package",
-                                        "Path to the base package",
+                                        "Path to the base package dir",
                                         "directory");
     parser.addOption(basePackageOption);
 
     QCommandLineOption newPackageOption(QStringList() << "n" << "new-package",
-                                        "Path to the new package",
+                                        "Path to the new package dir",
                                         "directory");
     parser.addOption(newPackageOption);
 
     QCommandLineOption outputOption(QStringList() << "o" << "output",
                                         "Path to the result package file",
-                                        "file");
+                                        "filepath");
     parser.addOption(outputOption);
 
     const QCommandLineOption helpOption = parser.addHelpOption();
@@ -89,9 +89,23 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStrin
         } else {
             options.m_JsonPath = DEFAULT_OUTPUT_NAME;
         }
+
+        result = CommandLineOk;
     } while (false);
 
     return result;
+}
+
+bool saveJson(const QString &filename, const QJsonDocument &document) {
+    bool success = false;
+    QFile outputFile(filename);
+
+    if (outputFile.open(QIODevice::WriteOnly)) {
+        outputFile.write(document.toJson(QJsonDocument::Indented));
+        success = true;
+    }
+
+    return success;
 }
 
 int main(int argc, char *argv[]) {
@@ -120,13 +134,12 @@ int main(int argc, char *argv[]) {
 
     auto json = diffGenerator.generateJson();
 
-    QFile outputFile(options.m_JsonPath);
-
-    if (outputFile.open(QIODevice::WriteOnly)) {
-        outputFile.write(json.toJson(QJsonDocument::Indented));
-    } else {
-        outputFile.setFileName(DEFAULT_OUTPUT_NAME);
+    if (!saveJson(options.m_JsonPath, json)) {
+        if (!saveJson(DEFAULT_OUTPUT_NAME, json)) {
+            std::cerr << "Failed to save json to file" << std::endl;
+            return 1;
+        }
     }
 
-    return app.exec();
+    return 0;
 }

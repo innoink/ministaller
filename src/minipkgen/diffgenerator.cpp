@@ -11,6 +11,7 @@
 #include <QCryptographicHash>
 #include <QFile>
 #include <QJsonObject>
+#include "logger.h"
 
 #define BLOCK_SIZE 8192
 
@@ -34,7 +35,7 @@ void appendToList(const QString &relativePath, const QString &fullPath, QVector<
 }
 
 void addToListRecursively(const QDir &relativeDir, const QString &path, QVector<FileEntry> &list) {
-    QDirIterator it(path, QDirIterator::Subdirectories);
+    QDirIterator it(path, QDir::NoDotAndDotDot | QDir::Dirs | QDir::Files, QDirIterator::Subdirectories);
 
     while (it.hasNext()) {
         QString fullPath = it.next();
@@ -45,10 +46,10 @@ void addToListRecursively(const QDir &relativeDir, const QString &path, QVector<
 
 DiffGenerator::DiffGenerator(const QString &baseDir, const QString &newDir):
     m_BaseDir(baseDir),
-    m_NewDir(newDir),
-    m_BaseDirPath(baseDir),
-    m_NewDirPath(newDir)
+    m_NewDir(newDir)
 {
+    m_BaseDirPath = m_BaseDir.absolutePath();
+    m_NewDirPath = m_NewDir.absolutePath();
 }
 
 void DiffGenerator::generateDiffs() {
@@ -75,7 +76,9 @@ QJsonDocument DiffGenerator::generateJson() {
 }
 
 void DiffGenerator::generateDirsDiff(const QString &baseDirPath, const QString &newDirPath) {
-    QDirIterator baseIt(baseDirPath);
+    LOG << "BaseDir:" << baseDirPath << "NewDir:" << newDirPath;
+
+    QDirIterator baseIt(baseDirPath, QDir::NoDotAndDotDot | QDir::Dirs | QDir::Files, QDirIterator::NoIteratorFlags);
     QDir newDir(newDirPath);
 
     while (baseIt.hasNext()) {
@@ -85,6 +88,7 @@ void DiffGenerator::generateDirsDiff(const QString &baseDirPath, const QString &
 
         QFileInfo fi(newFilepath);
         if (!fi.exists()) {
+            LOG << "Removing dir:" << baseFilepath;
             addToListRecursively(m_BaseDir, baseFilepath, m_ItemsToRemove);
         } else {
             if (fi.isFile()) {

@@ -40,8 +40,8 @@ private:
     QVector<FileEntry> m_ItemsToRemove;
     QDir m_BaseDir;
     QDir m_NewDir;
-    const QString &m_BaseDirPath;
-    const QString &m_NewDirPath;
+    QString m_BaseDirPath;
+    QString m_NewDirPath;
 };
 
 #endif // DIFFGENERATOR_H
