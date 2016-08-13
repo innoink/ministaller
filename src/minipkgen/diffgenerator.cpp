@@ -61,15 +61,15 @@ QJsonDocument DiffGenerator::generateJson() {
 
     QJsonArray itemsToRemove;
     listToJsonArray(m_ItemsToRemove, itemsToRemove);
-    rootObject.insert("items_to_remove", itemsToRemove);
+    rootObject.insert("remove", itemsToRemove);
 
     QJsonArray itemsToUpdate;
     listToJsonArray(m_ItemsToUpdate, itemsToUpdate);
-    rootObject.insert("items_to_update", itemsToUpdate);
+    rootObject.insert("update", itemsToUpdate);
 
     QJsonArray itemsToAdd;
     listToJsonArray(m_ItemsToAdd, itemsToAdd);
-    rootObject.insert("items_to_add", itemsToAdd);
+    rootObject.insert("add", itemsToAdd);
 
     QJsonDocument document(rootObject);
     return document;
