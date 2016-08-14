@@ -47,22 +47,19 @@ bool waitForProcess(PLATFORM_PID pid) {
 #endif
 }
 
-bool isDirectoryEmpty(const QString &dir) {
-    return QDir(dir).entryInfoList(QDir::NoDotAndDotDot | QDir::AllEntries).empty();
-}
-
 void cleanupEmptyDirectories(const QString &baseDirectory) {
     QDirIterator it(baseDirectory, QDir::NoDotAndDotDot | QDir::Dirs, QDirIterator::NoIteratorFlags);
     while (it.hasNext()) {
-        QString subdir = it.next();
+        QString subdirPath = it.next();
 
-        cleanupEmptyDirectories(subdir);
+        cleanupEmptyDirectories(subdirPath);
 
-        if (isDirectoryEmpty(subdir)) {
-            qInfo() << "Removing empty directory:" << subdir;
-            bool removeResult = QDir(subdir).removeRecursively();
+        QDir subdir(subdirPath);
+        if (subdir.entryInfoList(QDir::NoDotAndDotDot | QDir::AllEntries).empty()) {
+            qInfo() << "Removing empty directory:" << subdirPath;
+            bool removeResult = subdir.removeRecursively();
             if (!removeResult) {
-                qWarning() << "Failed to remove directory:" << subdir;
+                qWarning() << "Failed to remove directory:" << subdirPath;
             }
         }
     }
