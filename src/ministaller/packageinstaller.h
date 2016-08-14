@@ -11,6 +11,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QVector>
 #include <QHash>
 #include "platform.h"
 #include "../common/fileentry.h"
@@ -31,8 +32,22 @@ public:
     void setPackageDir(const QString &dir) { Q_ASSERT(!dir.isEmpty()); m_PackageDir = dir; }
     void setBackupDir(const QString &dir) { Q_ASSERT(!dir.isEmpty()); m_BackupDir = dir; }
     void setPidWaitFor(PLATFORM_PID pid) { m_PidWaitFor = pid; }
+    void setItemsToAdd(const QVector<FileEntry> &items) { m_ItemsToAdd = items; }
+    void setItemsToUpdate(const QVector<FileEntry> &items) { m_ItemsToUpdate = items; }
+    void setItemsToRemove(const QVector<FileEntry> &items) { m_ItemsToRemove = items; }
+
+public:
+    void install();
 
 private:
+    void beforeInstall();
+    bool installPackage();
+    void afterSuccess();
+    void afterFailure();
+
+private:
+    void addFilesToAdd();
+    void updateFilesToUpdate();
     void backupPath(const QString &path);
     void removeBackups();
     void restoreBackups();
@@ -43,6 +58,9 @@ private:
     QString m_PackageDir;
     QString m_BackupDir;
     PLATFORM_PID m_PidWaitFor;
+    QVector<FileEntry> m_ItemsToAdd;
+    QVector<FileEntry> m_ItemsToUpdate;
+    QVector<FileEntry> m_ItemsToRemove;
     QHash<QString, QString> m_BackupPaths;
 };
 

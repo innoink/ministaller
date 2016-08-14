@@ -65,13 +65,112 @@ void cleanupEmptyDirectories(const QString &baseDirectory) {
     }
 }
 
+QString joinPath(const QString& path1, const QString& path2) {
+    return QDir::cleanPath(path1 + QDir::separator() + path2);
+}
+
+bool moveFile(const QString &from, const QString &to) {
+    bool success = false;
+
+    QFile destination(to);
+    if (destination.exists()) {
+        if (!destination.remove()) {
+            return success;
+        }
+    }
+
+    QFile source(from);
+    if (source.exists()) {
+        success = source.rename(to);
+    }
+
+    return success;
+}
+
 PackageInstaller::PackageInstaller() {
 }
 
-void PackageInstaller::backupPath(const QString &path) {
-    QFile originalFile(path);
+void PackageInstaller::install() {
+    beforeInstall();
+    if (installPackage()) {
+        afterSuccess();
+    } else {
+        afterFailure();
+    }
+}
 
-    if (!originalFile.exists()) {
+void PackageInstaller::beforeInstall() {
+
+}
+
+bool PackageInstaller::installPackage() {
+
+}
+
+void PackageInstaller::afterSuccess() {
+    qDebug() << "#";
+    cleanupEmptyDirectories(m_InstallDir);
+    removeBackups();
+}
+
+void PackageInstaller::afterFailure() {
+    qDebug() << "#";
+    restoreBackups();
+    removeBackups();
+}
+
+void PackageInstaller::addFilesToAdd() {
+    qDebug() << "#";
+    int addedFilesCount = 0;
+
+    for (auto &item: m_ItemsToAdd) {
+        auto &path = item.m_Filepath;
+        QString fullPathToAdd = joinPath(m_PackageDir, path);
+        QString possibleExistingPath = joinPath(m_InstallDir, path);
+
+        Q_ASSERT(QFileInfo(fullPathToAdd).exists());
+        Q_ASSERT(!QFileInfo(possibleExistingPath).exists());
+
+        ensureDirectoryExistsForFile(possibleExistingPath);
+
+        if (!QFile::copy(fullPathToAdd, possibleExistingPath)) {
+            qWarning() << "Failed to install file" << fullPathToAdd;
+        } else {
+            addedFilesCount++;
+        }
+    }
+
+    qInfo() << "Added" << addedFilesCount << "files";
+}
+
+void PackageInstaller::updateFilesToUpdate() {
+    qDebug() << "#";
+    int updatedFilesCount = 0;
+
+    for (auto &item: m_ItemsToUpdate) {
+        auto &path = item.m_Filepath;
+        QString fullPathToUpdate = joinPath(m_PackageDir, path);
+        QString existingPath = joinPath(m_InstallDir, path);
+
+        Q_ASSERT(QFileInfo(fullPathToUpdate).exists());
+        Q_ASSERT(QFileInfo(existingPath).exists());
+
+        backupPath(existingPath);
+
+        if (!moveFile(fullPathToUpdate, existingPath)) {
+            qWarning() << "Failed to update file" << existingPath;
+        } else {
+            updatedFilesCount++;
+        }
+    }
+
+    qInfo() << "Updated" << updatedFilesCount << "files";
+}
+
+void PackageInstaller::backupPath(const QString &path) {
+    qInfo() << path;
+
+    if (!QFileInfo(path).exists()) {
         return;
     }
 
@@ -82,11 +181,15 @@ void PackageInstaller::backupPath(const QString &path) {
         backupFile.remove();
     }
 
-    originalFile.rename(backupPath);
-    m_BackupPaths[path] = backupPath;
+    if (QFile::copy(path, backupPath)) {
+        m_BackupPaths[path] = backupPath;
+    } else {
+        qWarning() << "Failed to backup" << path;
+    }
 }
 
 void PackageInstaller::removeBackups() {
+    qDebug() << "#";
     QHashIterator<QString, QString> it(m_BackupPaths);
     int removedCount = 0;
 
@@ -109,6 +212,7 @@ void PackageInstaller::removeBackups() {
 }
 
 void PackageInstaller::restoreBackups() {
+    qDebug() << "#";
     QHashIterator<QString, QString> it(m_BackupPaths);
     int restoredCount = 0;
 
@@ -122,9 +226,9 @@ void PackageInstaller::restoreBackups() {
             originalFile.remove();
         }
 
-        QFile backupFile(it.value());
-        if (backupFile.exists()) {
-            if (backupFile.rename(originalFilepath)) {
+        const QString &backupFilepath = it.value();
+        if (QFileInfo(backupFilepath).exists()) {
+            if (moveFile(backupFilepath, originalFilepath)) {
                 restoredCount++;
             } else {
                 qWarning() << "Failed to restore file:" << originalFilepath;
