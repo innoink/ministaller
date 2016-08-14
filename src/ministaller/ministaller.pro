@@ -7,8 +7,7 @@ DEFINES += QT_MESSAGELOGCONTEXT
 
 SOURCES += main.cpp \
     packageinstaller.cpp \
-    packageparser.cpp \
-    ../common/logger.cpp
+    packageparser.cpp
 
 RESOURCES += qml.qrc
 
@@ -22,6 +21,5 @@ HEADERS += \
     packageinstaller.h \
     platform.h \
     packageparser.h \
-    ../common/logger.h \
     ../common/fileentry.h \
     ../common/defines.h

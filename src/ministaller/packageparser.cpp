@@ -12,7 +12,8 @@
 #include <QJsonArray>
 #include <QJsonValue>
 #include <QFile>
-#include "../common/logger.h"
+#include <QDebug>
+#include "../common/defines.h"
 
 PackageParser::PackageParser(const QString &pathToConfig):
     m_ConfigPath(pathToConfig)
@@ -23,6 +24,7 @@ bool PackageParser::parsePackage() {
     QFile file(m_ConfigPath);
 
     if (!file.open(QIODevice::ReadOnly)) {
+        qWarning() << "Can't open file" << m_ConfigPath;
         return false;
     }
 
@@ -32,31 +34,34 @@ bool PackageParser::parsePackage() {
     bool anyFault = false;
 
     do {
-        if (rootObject.contains(ADD_ITEM)) {
-            QJsonValue addList = rootObject[ADD_ITEM];
+        if (rootObject.contains(ADD_ITEMS_KEY)) {
+            QJsonValue addList = rootObject[ADD_ITEMS_KEY];
             if (addList.isArray()) {
                 parseJsonArray(addList.toArray(), m_ItemsToAdd);
             } else {
+                qWarning() << "'add' element is not an array";
                 anyFault = true;
                 break;
             }
         }
 
-        if (rootObject.contains(UPDATE_ITEM)) {
-            QJsonValue updateList = rootObject[UPDATE_ITEM];
+        if (rootObject.contains(UPDATE_ITEMS_KEY)) {
+            QJsonValue updateList = rootObject[UPDATE_ITEMS_KEY];
             if (updateList.isArray()) {
                 parseJsonArray(updateList.toArray(), m_ItemsToUpdate);
             } else {
+                qWarning() << "'update' element is not an array";
                 anyFault = true;
                 break;
             }
         }
 
-        if (rootObject.contains(REMOVE_ITEM)) {
-            QJsonValue removeList = rootObject[REMOVE_ITEM];
+        if (rootObject.contains(REMOVE_ITEMS_KEY)) {
+            QJsonValue removeList = rootObject[REMOVE_ITEMS_KEY];
             if (removeList.isArray()) {
                 parseJsonArray(removeList.toArray(), m_ItemsToRemove);
             } else {
+                qWarning() << "'remove' element is not an array";
                 anyFault = true;
                 break;
             }
@@ -72,11 +77,15 @@ void PackageParser::parseJsonArray(const QJsonArray &array, QVector<FileEntry> &
 
     for (int i = 0; i < size; ++i) {
         const auto &item = array.at(i);
-        if (!item.isObject()) { continue; }
+        if (!item.isObject()) {
+            qWarning() << "Element at" << i << "is not an object";
+            continue;
+        }
 
         auto object = item.toObject();
         if (!object.contains(PATH_KEY) ||
                 !object.contains(SHA1_KEY)) {
+            qWarning() << "Element at" << i << "does not have all keys";
             continue;
         }
 

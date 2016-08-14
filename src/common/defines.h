@@ -9,9 +9,9 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#define ADD_ITEM "add"
-#define UPDATE_ITEM "update"
-#define REMOVE_ITEM "remove"
+#define ADD_ITEMS_KEY "add"
+#define UPDATE_ITEMS_KEY "update"
+#define REMOVE_ITEMS_KEY "remove"
 
 #define PATH_KEY "path"
 #define SHA1_KEY "sha1"
