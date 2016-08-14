@@ -10,12 +10,19 @@
 #include <QDirIterator>
 #include <QCryptographicHash>
 #include <QFile>
+#include <QHash>
 #include <QJsonObject>
 #include "logger.h"
 
 #define BLOCK_SIZE 8192
 
+QHash<QString, QString> Sha1Cache;
+
 QString getFileSha1(const QString &path) {
+    if (Sha1Cache.contains(path)) {
+        return Sha1Cache[path];
+    }
+
     QCryptographicHash crypto(QCryptographicHash::Sha1);
     QFile file(path);
     file.open(QFile::ReadOnly);
@@ -26,7 +33,12 @@ QString getFileSha1(const QString &path) {
 
     QByteArray hash = crypto.result();
     QString hex = QString::fromLatin1(hash.toHex());
+    Sha1Cache.insert(path, hex);
     return hex;
+}
+
+bool areFilesEqual(const QString &path1, const QString &path2) {
+    return getFileSha1(path1) == getFileSha1(path2);
 }
 
 void appendToList(const QString &relativePath, const QString &fullPath, QVector<FileEntry> &list) {
@@ -101,7 +113,11 @@ void DiffGenerator::generateDirsDiff(const QString &baseDirPath, const QString &
         } else {
             if (fi.isFile()) {
                 QString path = m_BaseDir.relativeFilePath(baseFilepath);
-                appendToList(path, baseFilepath, m_ItemsToUpdate);
+                if (!areFilesEqual(baseFilepath, newFilepath)) {
+                    appendToList(path, baseFilepath, m_ItemsToUpdate);
+                } else {
+                    LOG << "Skipping same file:" << path;
+                }
             } else if (fi.isDir()) {
                 Q_ASSERT(QFileInfo(baseFilepath).isDir());
                 generateDirsDiff(baseFilepath, newFilepath);
