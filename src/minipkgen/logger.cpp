@@ -11,8 +11,11 @@
 #include <ctime>
 
 std::mutex Logger::m_Mutex;
+bool Logger::m_Verbose;
 
 Logger::~Logger() {
+    if (!m_Verbose) { return; }
+
     std::lock_guard<std::mutex> guard(m_Mutex);
 
     std::time_t now = std::time(NULL);

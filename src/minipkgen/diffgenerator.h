@@ -32,6 +32,8 @@ public:
 
 private:
     void generateDirsDiff(const QString &baseDirPath, const QString &newDirPath);
+    void findFilesToRemoveOrUpdate(const QString &baseDirPath, const QString &newDirPath);
+    void findFilesToAdd(const QString &baseDirPath, const QString &newDirPath);
     void listToJsonArray(const QVector<FileEntry> &list, QJsonArray &array);
 
 private:

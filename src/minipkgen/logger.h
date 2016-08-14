@@ -37,6 +37,7 @@ struct Logger {
     }
 
     static std::mutex m_Mutex;
+    static bool m_Verbose;
 
 private:
     std::vector<std::string> m_LogLines;

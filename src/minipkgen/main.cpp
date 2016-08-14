@@ -12,8 +12,9 @@
 #include <QFile>
 #include <QJsonDocument>
 #include "diffgenerator.h"
+#include "logger.h"
 
-#define DEFAULT_OUTPUT_NAME QLatin1String("pkg.json")
+#define DEFAULT_OUTPUT_NAME "pkg.json"
 
 enum CommandLineParseResult {
     CommandLineOk,
@@ -43,6 +44,10 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStrin
                                         "filepath");
     parser.addOption(outputOption);
 
+    QCommandLineOption verboseOption(QStringList() << "v" << "verbose",
+                                        "Be verbose");
+    parser.addOption(verboseOption);
+
     const QCommandLineOption helpOption = parser.addHelpOption();
 
     CommandLineParseResult result = CommandLineError;
@@ -57,6 +62,8 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStrin
             result = CommandLineHelpRequested;
             break;
         }
+
+        Logger::m_Verbose = parser.isSet(verboseOption);
 
         if (parser.isSet(basePackageOption)) {
             const QString baseDir = parser.value(basePackageOption);
@@ -127,18 +134,18 @@ int main(int argc, char *argv[]) {
     }
 
     DiffGenerator diffGenerator(options.m_BaseDir, options.m_NewDir);
-
     diffGenerator.generateDiffs();
-
-    std::cout << "Done" << std::endl;
-
     auto json = diffGenerator.generateJson();
 
     if (!saveJson(options.m_JsonPath, json)) {
         if (!saveJson(DEFAULT_OUTPUT_NAME, json)) {
             std::cerr << "Failed to save json to file" << std::endl;
             return 1;
+        } else {
+            std::cout << "Generated " << DEFAULT_OUTPUT_NAME << std::endl;
         }
+    } else {
+        std::cout << "Generated " << options.m_JsonPath.toStdString() << std::endl;
     }
 
     return 0;

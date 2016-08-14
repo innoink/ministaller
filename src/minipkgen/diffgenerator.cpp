@@ -90,6 +90,11 @@ QJsonDocument DiffGenerator::generateJson() {
 void DiffGenerator::generateDirsDiff(const QString &baseDirPath, const QString &newDirPath) {
     LOG << "BaseDir:" << baseDirPath << "NewDir:" << newDirPath;
 
+    findFilesToRemoveOrUpdate(baseDirPath, newDirPath);
+    findFilesToAdd(baseDirPath, newDirPath);
+}
+
+void DiffGenerator::findFilesToRemoveOrUpdate(const QString &baseDirPath, const QString &newDirPath) {
     QDirIterator baseIt(baseDirPath, QDir::NoDotAndDotDot | QDir::Dirs | QDir::Files, QDirIterator::NoIteratorFlags);
     QDir newDir(newDirPath);
 
@@ -124,7 +129,9 @@ void DiffGenerator::generateDirsDiff(const QString &baseDirPath, const QString &
             }
         }
     }
+}
 
+void DiffGenerator::findFilesToAdd(const QString &baseDirPath, const QString &newDirPath) {
     QDirIterator newIt(newDirPath);
     QDir baseDir(baseDirPath);
 
