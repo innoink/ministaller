@@ -13,6 +13,7 @@
 #include <QJsonDocument>
 #include "diffgenerator.h"
 #include "logger.h"
+#include "options.h"
 
 #define DEFAULT_OUTPUT_NAME "pkg.json"
 
@@ -20,12 +21,6 @@ enum CommandLineParseResult {
     CommandLineOk,
     CommandLineError,
     CommandLineHelpRequested
-};
-
-struct ParsedOptions {
-    QString m_BaseDir;
-    QString m_NewDir;
-    QString m_JsonPath;
 };
 
 CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStringList &arguments, ParsedOptions &options) {
@@ -43,6 +38,10 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStrin
                                         "Path to the result package file",
                                         "filepath");
     parser.addOption(outputOption);
+
+    QCommandLineOption forceUpdateOption(QStringList() << "f" << "force-update",
+                                        "Don't skip same files");
+    parser.addOption(forceUpdateOption);
 
     QCommandLineOption verboseOption(QStringList() << "v" << "verbose",
                                         "Be verbose");
@@ -91,6 +90,8 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStrin
             break;
         }
 
+        options.m_ForceUpdate = parser.isSet(forceUpdateOption);
+
         if (parser.isSet(outputOption)) {
             options.m_JsonPath = parser.value(outputOption);
         } else {
@@ -133,7 +134,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    DiffGenerator diffGenerator(options.m_BaseDir, options.m_NewDir);
+    DiffGenerator diffGenerator(options);
     diffGenerator.generateDiffs();
     auto json = diffGenerator.generateJson();
 

@@ -56,9 +56,10 @@ void addToListRecursively(const QDir &relativeDir, const QString &path, QVector<
     }
 }
 
-DiffGenerator::DiffGenerator(const QString &baseDir, const QString &newDir):
-    m_BaseDir(baseDir),
-    m_NewDir(newDir)
+DiffGenerator::DiffGenerator(const ParsedOptions &options):
+    m_BaseDir(options.m_BaseDir),
+    m_NewDir(options.m_NewDir),
+    m_Options(options)
 {
     m_BaseDirPath = m_BaseDir.absolutePath();
     m_NewDirPath = m_NewDir.absolutePath();
@@ -118,7 +119,8 @@ void DiffGenerator::findFilesToRemoveOrUpdate(const QString &baseDirPath, const 
         } else {
             if (fi.isFile()) {
                 QString path = m_BaseDir.relativeFilePath(baseFilepath);
-                if (!areFilesEqual(baseFilepath, newFilepath)) {
+                if (m_Options.m_ForceUpdate || !areFilesEqual(baseFilepath, newFilepath)) {
+                    LOG << "Updating the file:" << path;
                     appendToList(path, baseFilepath, m_ItemsToUpdate);
                 } else {
                     LOG << "Skipping same file:" << path;
@@ -142,6 +144,7 @@ void DiffGenerator::findFilesToAdd(const QString &baseDirPath, const QString &ne
 
         QFileInfo fi(baseFilepath);
         if (!fi.exists()) {
+            LOG << "Adding file:" << newFilepath;
             addToListRecursively(m_NewDir, newFilepath, m_ItemsToAdd);
         }
     }

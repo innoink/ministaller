@@ -19,4 +19,5 @@ SOURCES += main.cpp \
 
 HEADERS += \
     diffgenerator.h \
-    logger.h
+    logger.h \
+    options.h

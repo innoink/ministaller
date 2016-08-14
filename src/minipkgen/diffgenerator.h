@@ -15,6 +15,7 @@
 #include <QStringList>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include "options.h"
 
 struct FileEntry {
     QString m_Filepath;
@@ -24,7 +25,7 @@ struct FileEntry {
 class DiffGenerator
 {
 public:
-    DiffGenerator(const QString &baseDir, const QString &newDir);
+    DiffGenerator(const ParsedOptions &options);
 
 public:
     void generateDiffs();
@@ -44,6 +45,7 @@ private:
     QDir m_NewDir;
     QString m_BaseDirPath;
     QString m_NewDirPath;
+    const ParsedOptions &m_Options;
 };
 
 #endif // DIFFGENERATOR_H
