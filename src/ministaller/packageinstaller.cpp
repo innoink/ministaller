@@ -8,6 +8,7 @@
 
 #include "packageinstaller.h"
 #include <QDebug>
+#include <QDirIterator>
 #include <QFileInfo>
 #include <QFile>
 #include <QDir>
@@ -44,6 +45,27 @@ bool waitForProcess(PLATFORM_PID pid) {
 
     return (dwRet == WAIT_OBJECT_0);
 #endif
+}
+
+bool isDirectoryEmpty(const QString &dir) {
+    return QDir(dir).entryInfoList(QDir::NoDotAndDotDot | QDir::AllEntries).empty();
+}
+
+void cleanupEmptyDirectories(const QString &baseDirectory) {
+    QDirIterator it(baseDirectory, QDir::NoDotAndDotDot | QDir::Dirs, QDirIterator::NoIteratorFlags);
+    while (it.hasNext()) {
+        QString subdir = it.next();
+
+        cleanupEmptyDirectories(subdir);
+
+        if (isDirectoryEmpty(subdir)) {
+            qInfo() << "Removing empty directory:" << subdir;
+            bool removeResult = QDir(subdir).removeRecursively();
+            if (!removeResult) {
+                qWarning() << "Failed to remove directory:" << subdir;
+            }
+        }
+    }
 }
 
 PackageInstaller::PackageInstaller() {

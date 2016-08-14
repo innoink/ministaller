@@ -38,6 +38,7 @@ bool PackageParser::parsePackage() {
             QJsonValue addList = rootObject[ADD_ITEMS_KEY];
             if (addList.isArray()) {
                 parseJsonArray(addList.toArray(), m_ItemsToAdd);
+                qInfo() << m_ItemsToAdd.size() << "items to add";
             } else {
                 qWarning() << "'add' element is not an array";
                 anyFault = true;
@@ -49,6 +50,7 @@ bool PackageParser::parsePackage() {
             QJsonValue updateList = rootObject[UPDATE_ITEMS_KEY];
             if (updateList.isArray()) {
                 parseJsonArray(updateList.toArray(), m_ItemsToUpdate);
+                qInfo() << m_ItemsToUpdate.size() << "items to update";
             } else {
                 qWarning() << "'update' element is not an array";
                 anyFault = true;
@@ -60,6 +62,7 @@ bool PackageParser::parsePackage() {
             QJsonValue removeList = rootObject[REMOVE_ITEMS_KEY];
             if (removeList.isArray()) {
                 parseJsonArray(removeList.toArray(), m_ItemsToRemove);
+                qInfo() << m_ItemsToRemove.size() << "items to remove";
             } else {
                 qWarning() << "'remove' element is not an array";
                 anyFault = true;
@@ -72,11 +75,13 @@ bool PackageParser::parsePackage() {
 }
 
 void PackageParser::parseJsonArray(const QJsonArray &array, QVector<FileEntry> &entryList) {
+    qDebug() << "#";
     int size = array.size();
     entryList.reserve(size);
 
     for (int i = 0; i < size; ++i) {
         const auto &item = array.at(i);
+
         if (!item.isObject()) {
             qWarning() << "Element at" << i << "is not an object";
             continue;

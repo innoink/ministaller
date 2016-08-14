@@ -13,6 +13,7 @@
 #include <QString>
 #include <QHash>
 #include "platform.h"
+#include "../common/fileentry.h"
 
 #ifdef Q_OS_WIN
 // for the platform_pid DWORD
