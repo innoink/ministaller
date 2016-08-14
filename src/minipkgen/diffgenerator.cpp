@@ -83,13 +83,21 @@ void DiffGenerator::generateDirsDiff(const QString &baseDirPath, const QString &
 
     while (baseIt.hasNext()) {
         QString baseFilepath = baseIt.next();
+        LOG << "Checking path:" << baseFilepath;
         QString baseFilename = baseIt.fileName();
         QString newFilepath = newDir.filePath(baseFilename);
 
         QFileInfo fi(newFilepath);
         if (!fi.exists()) {
-            LOG << "Removing dir:" << baseFilepath;
-            addToListRecursively(m_BaseDir, baseFilepath, m_ItemsToRemove);
+            QFileInfo baseFi(baseFilepath);
+            if (baseFi.isFile()) {
+                LOG << "Removing file:" << baseFilepath;
+                QString path = m_BaseDir.relativeFilePath(baseFilepath);
+                appendToList(path, baseFilepath, m_ItemsToRemove);
+            } else if (baseFi.isDir()) {
+                LOG << "Removing dir:" << baseFilepath;
+                addToListRecursively(m_BaseDir, baseFilepath, m_ItemsToRemove);
+            }
         } else {
             if (fi.isFile()) {
                 QString path = m_BaseDir.relativeFilePath(baseFilepath);
