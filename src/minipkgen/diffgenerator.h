@@ -16,11 +16,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include "options.h"
-
-struct FileEntry {
-    QString m_Filepath;
-    QString m_Sha1;
-};
+#include "../common/fileentry.h"
 
 class DiffGenerator
 {

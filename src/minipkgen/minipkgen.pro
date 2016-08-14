@@ -15,9 +15,11 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     diffgenerator.cpp \
-    logger.cpp
+    ../common/logger.cpp
 
 HEADERS += \
     diffgenerator.h \
-    logger.h \
-    options.h
+    ../common/logger.h \
+    options.h \
+    ../common/fileentry.h \
+    ../common/defines.h

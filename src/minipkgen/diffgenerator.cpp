@@ -12,7 +12,8 @@
 #include <QFile>
 #include <QHash>
 #include <QJsonObject>
-#include "logger.h"
+#include "../common/logger.h"
+#include "../common/defines.h"
 
 #define BLOCK_SIZE 8192
 
@@ -74,15 +75,15 @@ QJsonDocument DiffGenerator::generateJson() {
 
     QJsonArray itemsToRemove;
     listToJsonArray(m_ItemsToRemove, itemsToRemove);
-    rootObject.insert("remove", itemsToRemove);
+    rootObject.insert(REMOVE_ITEM, itemsToRemove);
 
     QJsonArray itemsToUpdate;
     listToJsonArray(m_ItemsToUpdate, itemsToUpdate);
-    rootObject.insert("update", itemsToUpdate);
+    rootObject.insert(UPDATE_ITEM, itemsToUpdate);
 
     QJsonArray itemsToAdd;
     listToJsonArray(m_ItemsToAdd, itemsToAdd);
-    rootObject.insert("add", itemsToAdd);
+    rootObject.insert(ADD_ITEM, itemsToAdd);
 
     QJsonDocument document(rootObject);
     return document;
@@ -99,6 +100,8 @@ void DiffGenerator::findFilesToRemoveOrUpdate(const QString &baseDirPath, const 
     QDirIterator baseIt(baseDirPath, QDir::NoDotAndDotDot | QDir::Dirs | QDir::Files, QDirIterator::NoIteratorFlags);
     QDir newDir(newDirPath);
 
+    const bool keepMissing = m_Options.m_KeepMissing;
+
     while (baseIt.hasNext()) {
         QString baseFilepath = baseIt.next();
         LOG << "Checking path:" << baseFilepath;
@@ -106,7 +109,7 @@ void DiffGenerator::findFilesToRemoveOrUpdate(const QString &baseDirPath, const 
         QString newFilepath = newDir.filePath(baseFilename);
 
         QFileInfo fi(newFilepath);
-        if (!fi.exists()) {
+        if (!keepMissing && !fi.exists()) {
             QFileInfo baseFi(baseFilepath);
             if (baseFi.isFile()) {
                 LOG << "Removing file:" << baseFilepath;
@@ -153,8 +156,8 @@ void DiffGenerator::findFilesToAdd(const QString &baseDirPath, const QString &ne
 void DiffGenerator::listToJsonArray(const QVector<FileEntry> &list, QJsonArray &array) {
     for (auto &entry: list) {
         QJsonObject fileEntryObj;
-        fileEntryObj.insert("path", QJsonValue(entry.m_Filepath));
-        fileEntryObj.insert("sha1", QJsonValue(entry.m_Sha1));
+        fileEntryObj.insert(PATH_KEY, QJsonValue(entry.m_Filepath));
+        fileEntryObj.insert(SHA1_KEY, QJsonValue(entry.m_Sha1));
 
         array.append(fileEntryObj);
     }

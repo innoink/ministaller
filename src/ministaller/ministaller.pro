@@ -6,7 +6,9 @@ CONFIG += c++11
 DEFINES += QT_MESSAGELOGCONTEXT
 
 SOURCES += main.cpp \
-    packageinstaller.cpp
+    packageinstaller.cpp \
+    packageparser.cpp \
+    ../common/logger.cpp
 
 RESOURCES += qml.qrc
 
@@ -18,4 +20,8 @@ include(deployment.pri)
 
 HEADERS += \
     packageinstaller.h \
-    platform.h
+    platform.h \
+    packageparser.h \
+    ../common/logger.h \
+    ../common/fileentry.h \
+    ../common/defines.h

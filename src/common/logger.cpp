@@ -11,7 +11,7 @@
 #include <ctime>
 
 std::mutex Logger::m_Mutex;
-bool Logger::m_Verbose;
+bool Logger::m_Verbose = false;
 
 Logger::~Logger() {
     if (!m_Verbose) { return; }

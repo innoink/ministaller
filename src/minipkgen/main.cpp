@@ -12,7 +12,7 @@
 #include <QFile>
 #include <QJsonDocument>
 #include "diffgenerator.h"
-#include "logger.h"
+#include "../common/logger.h"
 #include "options.h"
 
 #define DEFAULT_OUTPUT_NAME "pkg.json"
@@ -42,6 +42,10 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStrin
     QCommandLineOption forceUpdateOption(QStringList() << "f" << "force-update",
                                         "Don't skip same files");
     parser.addOption(forceUpdateOption);
+
+    QCommandLineOption dontRemoveOption(QStringList() << "k" << "keep-missing",
+                                        "Do not remove missing files in new package");
+    parser.addOption(dontRemoveOption);
 
     QCommandLineOption verboseOption(QStringList() << "v" << "verbose",
                                         "Be verbose");
@@ -91,6 +95,7 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStrin
         }
 
         options.m_ForceUpdate = parser.isSet(forceUpdateOption);
+        options.m_KeepMissing = parser.isSet(dontRemoveOption);
 
         if (parser.isSet(outputOption)) {
             options.m_JsonPath = parser.value(outputOption);
