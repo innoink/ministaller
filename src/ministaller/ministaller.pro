@@ -22,4 +22,5 @@ HEADERS += \
     platform.h \
     packageparser.h \
     ../common/fileentry.h \
-    ../common/defines.h
+    ../common/defines.h \
+    options.h
