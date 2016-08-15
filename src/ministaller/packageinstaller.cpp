@@ -87,7 +87,9 @@ bool moveFile(const QString &from, const QString &to) {
     return success;
 }
 
-PackageInstaller::PackageInstaller() {
+PackageInstaller::PackageInstaller():
+    m_PidWaitFor(0)
+{
 }
 
 void PackageInstaller::install() {
@@ -100,11 +102,36 @@ void PackageInstaller::install() {
 }
 
 void PackageInstaller::beforeInstall() {
+    qDebug() << "#";
 
+    if (m_PidWaitFor != 0) {
+        qInfo() << "Waiting for pid:" << m_PidWaitFor;
+        waitForProcess(m_PidWaitFor);
+    }
 }
 
 bool PackageInstaller::installPackage() {
+    qDebug() << "#";
 
+    bool success = false;
+
+    do {
+        if (!removeFilesToRemove()) {
+            break;
+        }
+
+        if (!updateFilesToUpdate()) {
+            break;
+        }
+
+        if (!addFilesToAdd()) {
+            break;
+        }
+
+        success = true;
+    } while (false);
+
+    return success;
 }
 
 void PackageInstaller::afterSuccess() {
@@ -115,13 +142,15 @@ void PackageInstaller::afterSuccess() {
 
 void PackageInstaller::afterFailure() {
     qDebug() << "#";
+    removeFilesToAdd();
     restoreBackups();
     removeBackups();
 }
 
-void PackageInstaller::addFilesToAdd() {
+bool PackageInstaller::addFilesToAdd() {
     qDebug() << "#";
-    int addedFilesCount = 0;
+    int addedFilesCount = 0,
+            failedToAddFilesCount = 0;
 
     for (auto &item: m_ItemsToAdd) {
         auto &path = item.m_Filepath;
@@ -133,19 +162,24 @@ void PackageInstaller::addFilesToAdd() {
 
         ensureDirectoryExistsForFile(possibleExistingPath);
 
-        if (!QFile::copy(fullPathToAdd, possibleExistingPath)) {
-            qWarning() << "Failed to install file" << fullPathToAdd;
-        } else {
+        if (moveFile(fullPathToAdd, possibleExistingPath)) {
             addedFilesCount++;
+        } else {
+            failedToAddFilesCount++;
+            qWarning() << "Failed to install file" << fullPathToAdd;
         }
     }
 
     qInfo() << "Added" << addedFilesCount << "files";
+    qInfo() << "Failed to add" << failedToAddFilesCount << "files";
+
+    return (failedToAddFilesCount == 0);
 }
 
-void PackageInstaller::updateFilesToUpdate() {
+bool PackageInstaller::updateFilesToUpdate() {
     qDebug() << "#";
-    int updatedFilesCount = 0;
+    int updatedFilesCount = 0,
+            failedToUpdateCount = 0;
 
     for (auto &item: m_ItemsToUpdate) {
         auto &path = item.m_Filepath;
@@ -156,15 +190,69 @@ void PackageInstaller::updateFilesToUpdate() {
         Q_ASSERT(QFileInfo(existingPath).exists());
 
         backupPath(existingPath);
+        ensureDirectoryExistsForFile(existingPath);
 
-        if (!moveFile(fullPathToUpdate, existingPath)) {
-            qWarning() << "Failed to update file" << existingPath;
-        } else {
+        if (moveFile(fullPathToUpdate, existingPath)) {
             updatedFilesCount++;
+        } else {
+            failedToUpdateCount++;
+            qWarning() << "Failed to update file" << existingPath;
         }
     }
 
     qInfo() << "Updated" << updatedFilesCount << "files";
+    qInfo() << "Failed to update" << failedToUpdateCount << "files";
+
+    return (failedToUpdateCount == 0);
+}
+
+bool PackageInstaller::removeFilesToRemove() {
+    qDebug() << "#";
+    int removedFilesCount = 0,
+            failedToRemoveCount = 0;
+
+    for (auto &item: m_ItemsToRemove) {
+        auto &path = item.m_Filepath;
+        QString fullPathToRemove = joinPath(m_InstallDir, path);
+
+        backupPath(fullPathToRemove);
+
+        if (QFile::remove(fullPathToRemove)) {
+            removedFilesCount++;
+        } else {
+            if (QFileInfo(fullPathToRemove).exists()) {
+                failedToRemoveCount++;
+                qWarning() << "Failed to remove:" << fullPathToRemove;
+            }
+        }
+    }
+
+    qInfo() << "Removed" << removedFilesCount << "files";
+    qInfo() << "Failed to remove" << failedToRemoveCount << "files";
+
+    return (failedToRemoveCount == 0);
+}
+
+void PackageInstaller::removeFilesToAdd() {
+    qDebug() << "#";
+
+    int removedFilesCount = 0,
+            failedToRemoveCount = 0;
+
+    for (auto &item: m_ItemsToAdd) {
+        auto &path = item.m_Filepath;
+        QString fullPathToRemove = joinPath(m_InstallDir, path);
+
+        if (QFile::remove(fullPathToRemove)) {
+            removedFilesCount++;
+        } else {
+            failedToRemoveCount++;
+            qWarning() << "Failed to remove:" << fullPathToRemove;
+        }
+    }
+
+    qInfo() << "Removed" << removedFilesCount << "files";
+    qInfo() << "Failed to remove" << failedToRemoveCount << "files";
 }
 
 void PackageInstaller::backupPath(const QString &path) {
@@ -209,6 +297,12 @@ void PackageInstaller::removeBackups() {
     }
 
     qInfo() << removedCount << "files removed";
+
+    if (QDir(m_BackupDir).removeRecursively()) {
+        qInfo() << "Removed" << m_BackupDir;
+    } else {
+        qWarning() << "Failed to remove" << m_BackupDir;
+    }
 }
 
 void PackageInstaller::restoreBackups() {
@@ -234,7 +328,7 @@ void PackageInstaller::restoreBackups() {
                 qWarning() << "Failed to restore file:" << originalFilepath;
             }
         } else {
-            qDebug() << "Backup path does not exist anymore:" << it.value();
+            qDebug() << "Backup path does not exist anymore:" << backupFilepath;
         }
     }
 

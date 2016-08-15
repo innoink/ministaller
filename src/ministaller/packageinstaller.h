@@ -46,8 +46,10 @@ private:
     void afterFailure();
 
 private:
-    void addFilesToAdd();
-    void updateFilesToUpdate();
+    bool addFilesToAdd();
+    bool updateFilesToUpdate();
+    bool removeFilesToRemove();
+    void removeFilesToAdd();
     void backupPath(const QString &path);
     void removeBackups();
     void restoreBackups();
