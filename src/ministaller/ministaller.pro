@@ -5,9 +5,22 @@ QT += qml quick
 CONFIG += c++11
 DEFINES += QT_MESSAGELOGCONTEXT
 
+LIBS += -L"$$PWD/../libs/"
+LIBS += -lz
+LIBS += -lquazip
+
+macx {
+    INCLUDEPATH += "../quazip"
+}
+
+win32 {
+    INCLUDEPATH += "../quazip"
+}
+
 SOURCES += main.cpp \
     packageinstaller.cpp \
-    packageparser.cpp
+    packageparser.cpp \
+    fshelpers.cpp
 
 RESOURCES += qml.qrc
 
@@ -23,4 +36,5 @@ HEADERS += \
     packageparser.h \
     ../common/fileentry.h \
     ../common/defines.h \
-    options.h
+    options.h \
+    fshelpers.h

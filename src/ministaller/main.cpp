@@ -13,7 +13,10 @@
 #include <QCommandLineOption>
 #include <QFileInfo>
 #include <QDir>
+#include <QTemporaryDir>
 #include "options.h"
+#include "fshelpers.h"
+#include "packageinstaller.h"
 
 enum CommandLineParseResult {
     CommandLineOk,
@@ -31,6 +34,16 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStrin
                                         "Path to the installed package",
                                         "directory");
     parser.addOption(installPathOption);
+
+    QCommandLineOption packagePathOption(QStringList() << "p" << "package-path",
+                                         "Path to the package to install",
+                                         "filepath");
+    parser.addOption(packagePathOption);
+
+    QCommandLineOption pidWaitForOption(QStringList() << "w" << "wait-pid",
+                                        "Pid of the process to wait for",
+                                        "number");
+    parser.addOption(pidWaitForOption);
 
     const QCommandLineOption helpOption = parser.addHelpOption();
 
@@ -69,6 +82,25 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStrin
             break;
         }
 
+        if (parser.isSet(packagePathOption)) {
+            options.m_PackagePath = parser.value(packagePathOption);
+            if (!QFileInfo(options.m_PackagePath).exists()) {
+                std::cerr << "Package can't be found" << std::endl;
+                break;
+            }
+        } else {
+            std::cerr << "Package path is missing" << std::endl;
+            break;
+        }
+
+        if (parser.isSet(pidWaitForOption)) {
+            bool ok = false;
+            options.m_PidWaitFor = parser.value(pidWaitForOption).toInt(&ok);
+            if (!ok) {
+                options.m_PidWaitFor = 0;
+            }
+        }
+
         result = CommandLineOk;
     } while (false);
 
@@ -92,6 +124,23 @@ int main(int argc, char *argv[]) {
         std::cout << optionsParser.helpText().toStdString() << std::endl;
         return 0;
     }
+
+    QString extractedDir;
+    if (!extractPackage(options.m_PackagePath, extractedDir)) {
+        std::cerr << "Failed to extract archive" << std::endl;
+        return 1;
+    }
+
+    QTemporaryDir backupDir;
+    if (!backupDir.isValid()) {
+        std::cerr << "Failed to create backup directory" << std::endl;
+        return 1;
+    }
+
+    PackageInstaller packageInstaller;
+    packageInstaller.setInstallDir(options.m_InstallDir);
+    packageInstaller.setPackageDir(extractedDir);
+    packageInstaller.setBackupDir(backupDir.path());
 
     QQmlApplicationEngine engine;
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));

@@ -15,6 +15,7 @@ struct ParsedOptions {
     QString m_PackageConfigPath;
     QString m_InstallDir;
     QString m_PackagePath;
+    int m_PidWaitFor;
 };
 
 #endif // OPTIONS_H
