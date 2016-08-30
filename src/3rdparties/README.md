@@ -1,0 +1,1 @@
+This directory should contain zlib-1.2.8/ directory with zlib sources and quazip/ with quazip sources.
