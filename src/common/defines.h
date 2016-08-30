@@ -16,4 +16,6 @@
 #define PATH_KEY "path"
 #define SHA1_KEY "sha1"
 
+#define LOG Logger()
+
 #endif // DEFINES_H

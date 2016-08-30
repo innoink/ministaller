@@ -19,7 +19,7 @@
 struct Logger {
     Logger() {}
 
-    ~Logger();
+    virtual ~Logger();
 
     Logger &operator<<(const std::string &s) {
         m_LogLines.push_back(s);

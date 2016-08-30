@@ -11,9 +11,9 @@
 #include <QCommandLineParser>
 #include <QFile>
 #include <QJsonDocument>
-#include "diffgenerator.h"
 #include "../common/logger.h"
 #include "options.h"
+#include "jsondiffgenerator.h"
 
 #define DEFAULT_OUTPUT_NAME "pkg.json"
 
@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    DiffGenerator diffGenerator(options);
+    JsonDiffGenerator diffGenerator(options);
     diffGenerator.generateDiffs();
     auto json = diffGenerator.generateJson();
 
