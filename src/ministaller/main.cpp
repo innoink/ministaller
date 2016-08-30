@@ -26,7 +26,7 @@ enum CommandLineParseResult {
 
 CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStringList &arguments, ParsedOptions &options) {
     QCommandLineOption updateConfigPathOption(QStringList() << "u" << "update-config",
-                                        "Path to the update config",
+                                        "Path to the update config if available",
                                         "filepath");
     parser.addOption(updateConfigPathOption);
 
@@ -45,6 +45,14 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStrin
                                         "number");
     parser.addOption(pidWaitForOption);
 
+    QCommandLineOption forceUpdateOption(QStringList() << "f" << "force-update",
+                                        "Don't skip same files");
+    parser.addOption(forceUpdateOption);
+
+    QCommandLineOption dontRemoveOption(QStringList() << "k" << "keep-missing",
+                                        "Do not remove missing files in new package");
+    parser.addOption(dontRemoveOption);
+
     const QCommandLineOption helpOption = parser.addHelpOption();
 
     CommandLineParseResult result = CommandLineError;
@@ -61,15 +69,18 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStrin
         }
 
         if (parser.isSet(updateConfigPathOption)) {
+            options.m_GenerateDiff = false;
             options.m_PackageConfigPath = parser.value(updateConfigPathOption);
             if (!QFileInfo(options.m_PackageConfigPath).exists()) {
                 std::cerr << "Update config can't be found" << std::endl;
                 break;
             }
         } else {
-            std::cerr << "Update config path is missing" << std::endl;
-            break;
+            options.m_GenerateDiff = true;
         }
+
+        options.m_ForceUpdate = parser.isSet(forceUpdateOption);
+        options.m_KeepMissing = parser.isSet(dontRemoveOption);
 
         if (parser.isSet(installPathOption)) {
             options.m_InstallDir = parser.value(installPathOption);

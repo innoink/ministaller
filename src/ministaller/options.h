@@ -16,6 +16,9 @@ struct ParsedOptions {
     QString m_InstallDir;
     QString m_PackagePath;
     int m_PidWaitFor;
+    bool m_GenerateDiff;
+    bool m_KeepMissing;
+    bool m_ForceUpdate;
 };
 
 #endif // OPTIONS_H
