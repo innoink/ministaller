@@ -11,12 +11,22 @@
 #include <QQmlApplicationEngine>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
+#include <QQmlContext>
 #include <QFileInfo>
 #include <QDir>
 #include <QTemporaryDir>
 #include "options.h"
 #include "fshelpers.h"
 #include "packageinstaller.h"
+#include "packageparser.h"
+#include "livelog.h"
+#include "../common/ifilesprovider.h"
+#include "../common/diffgeneratorbase.h"
+
+#define WRONG_OPTIONS 1
+#define CANNOT_PARSE_CONFIG 2
+#define CANNOT_EXTRACT_ARCHIVE 3
+#define CANNOT_CREATE_BACKUP_DIR 4
 
 enum CommandLineParseResult {
     CommandLineOk,
@@ -118,7 +128,57 @@ CommandLineParseResult parseCommandLine(QCommandLineParser &parser, const QStrin
     return result;
 }
 
+void myMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
+    Q_UNUSED(context);
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 4, 0))
+    QString logLine = qFormatLogMessage(type, context, msg);
+#else
+    QString msgType;
+    switch (type) {
+        case QtDebugMsg:
+            msgType = "debug";
+            break;
+        case QtWarningMsg:
+            msgType = "warning";
+            break;
+        case QtCriticalMsg:
+            msgType = "critical";
+            break;
+        case QtFatalMsg:
+            msgType = "fatal";
+            break;
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 5, 1))
+        case QtInfoMsg:
+            msgType = "info";
+            break;
+#endif
+    }
+
+    // %{time hh:mm:ss.zzz} %{type} T#%{threadid} %{function} - %{message}
+    QString time = QDateTime::currentDateTimeUtc().toString("hh:mm:ss.zzz");
+    QString logLine = QString("%1 %2 T#%3 %4 - %5")
+                          .arg(time).arg(msgType)
+                          .arg(0).arg(context.function)
+                          .arg(msg);
+#endif
+
+    auto &liveLog = LiveLog::getInstance();
+    liveLog.log(logLine);
+
+    if (type == QtFatalMsg) {
+        abort();
+    }
+}
+
+
 int main(int argc, char *argv[]) {
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 4, 0))
+    qSetMessagePattern("%{time hh:mm:ss.zzz} %{type} T#%{threadid} %{function} - %{message}");
+#endif
+
+    qInstallMessageHandler(myMessageHandler);
+
     QGuiApplication app(argc, argv);
 
     QCommandLineParser optionsParser;
@@ -130,7 +190,7 @@ int main(int argc, char *argv[]) {
         break;
     case CommandLineError:
         std::cout << optionsParser.helpText().toStdString() << std::endl;
-        return 1;
+        return WRONG_OPTIONS;
     case CommandLineHelpRequested:
         std::cout << optionsParser.helpText().toStdString() << std::endl;
         return 0;
@@ -139,22 +199,43 @@ int main(int argc, char *argv[]) {
     QString extractedDir;
     if (!extractPackage(options.m_PackagePath, extractedDir)) {
         std::cerr << "Failed to extract archive" << std::endl;
-        return 1;
+        return CANNOT_EXTRACT_ARCHIVE;
     }
 
     QTemporaryDir backupDir;
     if (!backupDir.isValid()) {
         std::cerr << "Failed to create backup directory" << std::endl;
-        return 1;
+        return CANNOT_CREATE_BACKUP_DIR;
     }
 
-    PackageInstaller packageInstaller;
+    std::shared_ptr<IFilesProvider> filesProvider;
+    if (options.m_GenerateDiff) {
+        std::shared_ptr<DiffGeneratorBase> diffGenerator(new DiffGeneratorBase(options.m_PackagePath, options.m_InstallDir,
+                                                  options.m_ForceUpdate, options.m_KeepMissing));
+        diffGenerator->generateDiffs();
+        filesProvider = std::dynamic_pointer_cast<IFilesProvider>(diffGenerator);
+    } else {
+        std::shared_ptr<PackageParser> packageParser(new PackageParser(options.m_PackageConfigPath));
+
+        if (!packageParser->parsePackage()) {
+            std::cerr << "Cannot parse package config" << std::endl;
+            return CANNOT_PARSE_CONFIG;
+        }
+
+        filesProvider = std::dynamic_pointer_cast<IFilesProvider>(packageParser);
+    }
+
+    PackageInstaller packageInstaller(filesProvider);
     packageInstaller.setInstallDir(options.m_InstallDir);
     packageInstaller.setPackageDir(extractedDir);
     packageInstaller.setBackupDir(backupDir.path());
 
     QQmlApplicationEngine engine;
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+
+    QQmlContext *rootContext = engine.rootContext();
+    auto &liveLog = LiveLog::getInstance();
+    rootContext->setContextProperty("liveLog", &liveLog);
 
     return app.exec();
 }

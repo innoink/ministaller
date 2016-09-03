@@ -13,19 +13,21 @@
 #include <QVector>
 #include <QJsonArray>
 #include "../common/fileentry.h"
+#include "../common/ifilesprovider.h"
 
-class PackageParser
+class PackageParser: public IFilesProvider
 {
 public:
     PackageParser(const QString &pathToConfig);
+    virtual ~PackageParser() {}
 
 public:
     bool parsePackage();
 
 public:
-    const QVector<FileEntry> &getItemsToAdd() const { return m_ItemsToAdd; }
-    const QVector<FileEntry> &getItemsToUpdate() const { return m_ItemsToUpdate; }
-    const QVector<FileEntry> &getItemsToRemove() const { return m_ItemsToRemove; }
+    const QVector<FileEntry> &getItemsToAdd() const override { return m_ItemsToAdd; }
+    const QVector<FileEntry> &getItemsToUpdate() const override { return m_ItemsToUpdate; }
+    const QVector<FileEntry> &getItemsToRemove() const override { return m_ItemsToRemove; }
 
 private:
     void parseJsonArray(const QJsonArray &array, QVector<FileEntry> &entryList);

@@ -26,4 +26,5 @@ HEADERS += \
     ../common/fileentry.h \
     ../common/defines.h \
     ../common/diffgeneratorbase.h \
+    ../common/ifilesprovider.h \
     jsondiffgenerator.h

@@ -15,6 +15,7 @@ JsonDiffGenerator::JsonDiffGenerator(const ParsedOptions &options):
     DiffGeneratorBase(options.m_BaseDir, options.m_NewDir, options.m_ForceUpdate, options.m_KeepMissing),
     m_Options(options)
 {
+    Q_UNUSED(m_Options);
 }
 
 QJsonDocument JsonDiffGenerator::generateJson() {

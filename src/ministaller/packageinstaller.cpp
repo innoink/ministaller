@@ -87,8 +87,9 @@ bool moveFile(const QString &from, const QString &to) {
     return success;
 }
 
-PackageInstaller::PackageInstaller():
-    m_PidWaitFor(0)
+PackageInstaller::PackageInstaller(const std::shared_ptr<IFilesProvider> &filesProvider):
+    m_PidWaitFor(0),
+    m_FilesProvider(filesProvider)
 {
 }
 
@@ -152,7 +153,9 @@ bool PackageInstaller::addFilesToAdd() {
     int addedFilesCount = 0,
             failedToAddFilesCount = 0;
 
-    for (auto &item: m_ItemsToAdd) {
+    auto &itemsToAdd = m_FilesProvider->getItemsToAdd();
+
+    for (auto &item: itemsToAdd) {
         auto &path = item.m_Filepath;
         QString fullPathToAdd = joinPath(m_PackageDir, path);
         QString possibleExistingPath = joinPath(m_InstallDir, path);
@@ -181,7 +184,9 @@ bool PackageInstaller::updateFilesToUpdate() {
     int updatedFilesCount = 0,
             failedToUpdateCount = 0;
 
-    for (auto &item: m_ItemsToUpdate) {
+    auto &itemsToUpdate = m_FilesProvider->getItemsToUpdate();
+
+    for (auto &item: itemsToUpdate) {
         auto &path = item.m_Filepath;
         QString fullPathToUpdate = joinPath(m_PackageDir, path);
         QString existingPath = joinPath(m_InstallDir, path);
@@ -211,7 +216,9 @@ bool PackageInstaller::removeFilesToRemove() {
     int removedFilesCount = 0,
             failedToRemoveCount = 0;
 
-    for (auto &item: m_ItemsToRemove) {
+    auto &itemsToRemove = m_FilesProvider->getItemsToRemove();
+
+    for (auto &item: itemsToRemove) {
         auto &path = item.m_Filepath;
         QString fullPathToRemove = joinPath(m_InstallDir, path);
 
@@ -239,7 +246,9 @@ void PackageInstaller::removeFilesToAdd() {
     int removedFilesCount = 0,
             failedToRemoveCount = 0;
 
-    for (auto &item: m_ItemsToAdd) {
+    auto &itemsToAdd = m_FilesProvider->getItemsToAdd();
+
+    for (auto &item: itemsToAdd) {
         auto &path = item.m_Filepath;
         QString fullPathToRemove = joinPath(m_InstallDir, path);
 

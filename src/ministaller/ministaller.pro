@@ -23,7 +23,8 @@ SOURCES += main.cpp \
     packageinstaller.cpp \
     packageparser.cpp \
     fshelpers.cpp \
-    ../common/diffgeneratorbase.cpp
+    ../common/diffgeneratorbase.cpp \
+    livelog.cpp
 
 RESOURCES += qml.qrc
 
@@ -41,4 +42,6 @@ HEADERS += \
     ../common/defines.h \
     ../common/diffgeneratorbase.h \
     options.h \
-    fshelpers.h
+    fshelpers.h \
+    ../common/ifilesprovider.h \
+    livelog.h

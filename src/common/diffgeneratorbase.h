@@ -16,18 +16,20 @@
 #include <QStringList>
 #include <QDebug>
 #include "fileentry.h"
+#include "ifilesprovider.h"
 
-class DiffGeneratorBase {
+class DiffGeneratorBase: public IFilesProvider {
 public:
     DiffGeneratorBase(const QString &baseDirPath, const QString &newDirPath, bool forceUpdate, bool keepMissing);
+    virtual ~DiffGeneratorBase() {}
 
 public:
     void generateDiffs();
 
 public:
-    const QVector<FileEntry> &getItemsToAdd() const { return m_ItemsToAdd; }
-    const QVector<FileEntry> &getItemsToUpdate() const { return m_ItemsToUpdate; }
-    const QVector<FileEntry> &getItemsToRemove() const { return m_ItemsToRemove; }
+    const QVector<FileEntry> &getItemsToAdd() const override { return m_ItemsToAdd; }
+    const QVector<FileEntry> &getItemsToUpdate() const override { return m_ItemsToUpdate; }
+    const QVector<FileEntry> &getItemsToRemove() const override { return m_ItemsToRemove; }
 
 private:
     void generateDirsDiff(const QString &baseDirPath, const QString &newDirPath);
