@@ -24,7 +24,8 @@ SOURCES += main.cpp \
     packageparser.cpp \
     fshelpers.cpp \
     ../common/diffgeneratorbase.cpp \
-    livelog.cpp
+    livelog.cpp \
+    installationorchestrator.cpp
 
 RESOURCES += qml.qrc
 
@@ -44,4 +45,5 @@ HEADERS += \
     options.h \
     fshelpers.h \
     ../common/ifilesprovider.h \
-    livelog.h
+    livelog.h \
+    installationorchestrator.h

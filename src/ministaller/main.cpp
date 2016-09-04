@@ -12,21 +12,12 @@
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include <QQmlContext>
+#include <QThread>
 #include <QFileInfo>
 #include <QDir>
-#include <QTemporaryDir>
+#include "installationorchestrator.h"
 #include "options.h"
-#include "fshelpers.h"
-#include "packageinstaller.h"
-#include "packageparser.h"
 #include "livelog.h"
-#include "../common/ifilesprovider.h"
-#include "../common/diffgeneratorbase.h"
-
-#define WRONG_OPTIONS 1
-#define CANNOT_PARSE_CONFIG 2
-#define CANNOT_EXTRACT_ARCHIVE 3
-#define CANNOT_CREATE_BACKUP_DIR 4
 
 enum CommandLineParseResult {
     CommandLineOk,
@@ -171,7 +162,6 @@ void myMessageHandler(QtMsgType type, const QMessageLogContext &context, const Q
     }
 }
 
-
 int main(int argc, char *argv[]) {
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 4, 0))
     qSetMessagePattern("%{time hh:mm:ss.zzz} %{type} T#%{threadid} %{function} - %{message}");
@@ -190,45 +180,11 @@ int main(int argc, char *argv[]) {
         break;
     case CommandLineError:
         std::cout << optionsParser.helpText().toStdString() << std::endl;
-        return WRONG_OPTIONS;
+        return 1;
     case CommandLineHelpRequested:
         std::cout << optionsParser.helpText().toStdString() << std::endl;
         return 0;
     }
-
-    QString extractedDir;
-    if (!extractPackage(options.m_PackagePath, extractedDir)) {
-        std::cerr << "Failed to extract archive" << std::endl;
-        return CANNOT_EXTRACT_ARCHIVE;
-    }
-
-    QTemporaryDir backupDir;
-    if (!backupDir.isValid()) {
-        std::cerr << "Failed to create backup directory" << std::endl;
-        return CANNOT_CREATE_BACKUP_DIR;
-    }
-
-    std::shared_ptr<IFilesProvider> filesProvider;
-    if (options.m_GenerateDiff) {
-        std::shared_ptr<DiffGeneratorBase> diffGenerator(new DiffGeneratorBase(options.m_PackagePath, options.m_InstallDir,
-                                                  options.m_ForceUpdate, options.m_KeepMissing));
-        diffGenerator->generateDiffs();
-        filesProvider = std::dynamic_pointer_cast<IFilesProvider>(diffGenerator);
-    } else {
-        std::shared_ptr<PackageParser> packageParser(new PackageParser(options.m_PackageConfigPath));
-
-        if (!packageParser->parsePackage()) {
-            std::cerr << "Cannot parse package config" << std::endl;
-            return CANNOT_PARSE_CONFIG;
-        }
-
-        filesProvider = std::dynamic_pointer_cast<IFilesProvider>(packageParser);
-    }
-
-    PackageInstaller packageInstaller(filesProvider);
-    packageInstaller.setInstallDir(options.m_InstallDir);
-    packageInstaller.setPackageDir(extractedDir);
-    packageInstaller.setBackupDir(backupDir.path());
 
     QQmlApplicationEngine engine;
     engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
@@ -236,6 +192,18 @@ int main(int argc, char *argv[]) {
     QQmlContext *rootContext = engine.rootContext();
     auto &liveLog = LiveLog::getInstance();
     rootContext->setContextProperty("liveLog", &liveLog);
+
+    InstallationOrchestrator *orchestrator = new InstallationOrchestrator(options);
+    QThread *thread = new QThread();
+    orchestrator->moveToThread(thread);
+
+    QObject::connect(thread, SIGNAL(started()), orchestrator, SLOT(process()));
+    QObject::connect(orchestrator, SIGNAL(finished()), thread, SLOT(quit()));
+
+    QObject::connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
+    QObject::connect(orchestrator, SIGNAL(finished()), orchestrator, SLOT(deleteLater()));
+
+    thread->start();
 
     return app.exec();
 }

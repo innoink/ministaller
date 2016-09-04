@@ -12,12 +12,13 @@
 #include <QObject>
 #include <QAbstractListModel>
 
-class LiveLog : public QAbstractListModel
+class LiveLog : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QString contents READ getLiveLogContents NOTIFY logContentsChanged)
 private:
     explicit LiveLog(QObject *parent = 0):
-        QAbstractListModel(parent)
+        QObject(parent)
     {
     }
 
@@ -33,14 +34,14 @@ public:
     }
 
     void log(const QString &message);
+    const QString &getLiveLogContents() const { return m_JoinedLog; }
 
-    // QAbstractItemModel interface
-public:
-    int rowCount(const QModelIndex &parent) const override;
-    QVariant data(const QModelIndex &index, int role) const override;
+signals:
+    void logContentsChanged();
 
 private:
     QStringList m_LogLines;
+    QString m_JoinedLog;
 };
 
 #endif // LIVELOG_H
